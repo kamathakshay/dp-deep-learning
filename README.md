@@ -8,3 +8,6 @@ TODO : Use batch size, input size, and number of epochs to decide on best parame
 TODO : Find networks with FC layers that overfit on tasks to test our methods.
 
 TODO : Use https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf to decide on experiments/graphs for project report.
+
+## Training
+`python main.py`
