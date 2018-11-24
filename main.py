@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import keras
+import pickle
 import datetime
 from keras.datasets import mnist, cifar10
 from keras.preprocessing.image import ImageDataGenerator
@@ -52,23 +53,16 @@ def train(model, x_train, y_train, x_test, y_test):
     datagen.fit(x_train)
 
     datenow = datetime.datetime.today().strftime('%Y-%m-%d_%H:%M')
-    logs_dir = args.save_dir + '/logs/'
-    checkpoint_dir = args.save_dir + '/checkpoints/'
-    tensorboard_dir = args.save_dir + '/tb_logs/'
-    for p in [args.save_dir, logs_dir, checkpoint_dir, tensorboard_dir]:
+    save_dir = os.path.join(args.save_dir, "m_" + datenow + "_" + args.data
+                            + "_lr" + str(args.learning_rate))
+    for p in [args.save_dir, save_dir]:
         if not os.path.isdir(p):
-            os.makedirs(p)
+            os.mkdir(p)
 
-    output_base = "m_" + datenow + "_" + args.model_name \
-                  + "_lr" + str(args.learning_rate)
-    logger_output_tl = output_base + "_tl.log"
-
-    csv_logger_tl = CSVLogger(logs_dir + logger_output_tl, append=True)
-    weights_tl = output_base + "_tl.hdf5"
-    checkpointer_tl = ModelCheckpoint(filepath=checkpoint_dir + weights_tl, verbose=1,
+    csv_logger_tl = CSVLogger(os.path.join(save_dir, 'csv_logger.log'), append=True)
+    checkpointer_tl = ModelCheckpoint(filepath=os.path.join(save_dir, 'checkpoint.hdf5'), verbose=1,
                                       monitor='val_loss', save_best_only=True, mode='min')
-    tensorboard_dir = tensorboard_dir + output_base + "_tl"
-    tensorboard_tl = TensorBoard(log_dir=tensorboard_dir, histogram_freq=0, write_images=True)
+    tensorboard_tl = TensorBoard(log_dir=os.path.join(save_dir, 'tb_logs/'), histogram_freq=0, write_images=True)
 
     history = model.fit_generator(datagen.flow(x_train, y_train,
                                                batch_size=args.batch_size),
@@ -77,7 +71,8 @@ def train(model, x_train, y_train, x_test, y_test):
                                   workers=4,
                                   steps_per_epoch=x_train.shape[0] / args.batch_size,
                                   callbacks=[csv_logger_tl, checkpointer_tl, tensorboard_tl])
-    print(history.history.keys())
+    with open(os.path.join(save_dir, 'training_history'), 'wb') as file_pi:
+        pickle.dump(history.history, file_pi)
     return model
 
 
