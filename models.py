@@ -27,7 +27,7 @@ def build_model_cifar(input_shape, num_classes=10):
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
     model.add(Dense(num_classes))
-    model.add(Activation('softmax'))
+    model.add(Activation('softmax', name='final_preds'))
 
     return model
 
@@ -42,5 +42,5 @@ def build_model_mnist(input_shape, num_classes=10):
     model.add(Flatten())
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(num_classes, activation='softmax'))
+    model.add(Dense(num_classes, activation='softmax', name='final_preds'))
     return model

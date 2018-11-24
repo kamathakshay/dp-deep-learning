@@ -15,11 +15,21 @@ def parse_command():
     parser.add_argument('-s', '--steps_per_epoch', default=None, type=int,
                         help='Steps to train per epoch (default: None)')
     parser.add_argument('--save_dir', default='./saved_models/', type=str, dest='save_dir',
-                        help='directory to save the checkpoints (default: ''./checkpoints/'')')
+                        help='directory to save the checkpoints (default: ''./saved_models/'')')
     parser.add_argument('-m', '--model_name', default='cifar10cnn', type=str, dest='model_name',
                         help='model name (default: ''cifar10cnn'')')
-    parser.add_argument('-d', '--data', metavar='DATA', default='cifar10',
+    parser.add_argument('-d', '--data', metavar='DATA', default='mnist',
                         choices=data_names,
-                        help='dataset: ' + ' | '.join(data_names) + ' (default: cifar10)')
+                        help='dataset: ' + ' | '.join(data_names) + ' (default: mnist)')
+    args = parser.parse_args()
+    return args
+
+def parse_visualization_command():
+    import argparse
+    parser = argparse.ArgumentParser(description='Deep Learning with Differential Privacy')
+    parser.add_argument('--save_dir', default='./saved_models/', type=str, dest='save_dir',
+                        help='directory where the checkpoints are saved (default: ''./saved_models/'')')
+    parser.add_argument('--model_name', dest='model_name', type=str, default='',
+                        help='model name. If not specified, read the first model in directory.')
     args = parser.parse_args()
     return args
