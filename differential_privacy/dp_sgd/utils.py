@@ -86,7 +86,26 @@ tf.flags.DEFINE_bool("terminate_based_on_privacy", False,
                      "(max(--target_eps), --target_delta), even "
                      "if --num_training_steps have not yet been completed.")
 
-tf.flags.DEFINE_string("save_path", "./results/",
+tf.flags.DEFINE_string("save_path", "results/",
                        "Directory for saving model outputs.")
+
+
+#Optimizers
+tf.flags.DEFINE_string("optimizer", "SGD",
+                       "Optimizer for training: momentum/adam(SGD default")
+
+tf.flags.DEFINE_string("momentum", 0.99,
+                       "momentum parameter")
+
+tf.flags.DEFINE_string("beta1", 0.9,
+                       "beta1 parameter for Adam")
+
+tf.flags.DEFINE_string("beta2", 0.999,
+                       "beta2 parameter for Adam")
+
+tf.flags.DEFINE_string("adam_epsilon", 1e-8,
+                       "epsilon parameter in Adam")
+
+
 
 FLAGS = tf.flags.FLAGS

@@ -136,7 +136,7 @@ def Eval(mnist_data_file, network_parameters, num_testing_images,
 
 
 def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
-          save_path, eval_steps=0):
+          save_path, optimizer, eval_steps=0):
     """Train MNIST for a number of steps.
 
     Args:
@@ -184,7 +184,9 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
     print(params)
     print('=' * 50)
 
-    if not os.path.isdir(save_path):
+    print(ROOT_DIR)
+
+    if not os.path.isdir(os.path.join(ROOT_DIR, save_path)):
         os.mkdir(os.path.join(ROOT_DIR, save_path))
 
     with tf.Graph().as_default(), tf.Session() as sess, tf.device('/cpu:0'):
@@ -234,6 +236,7 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
         lr = tf.placeholder(tf.float32)
         eps = tf.placeholder(tf.float32)
         delta = tf.placeholder(tf.float32)
+        momentum = tf.placeholder(tf.float32)
 
         init_ops = []
         if network_parameters.projection_type == "PCA":
@@ -250,7 +253,34 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
         global_step = tf.Variable(0, dtype=tf.int32, trainable=False,
                                   name="global_step")
 
-        if with_privacy:
+        if optimizer == "momentum":
+          if with_privacy:
+            gd_op = dp_optimizer.DPMomentumOptimizer(
+                lr,
+                momentum,
+                [eps, delta],
+                gaussian_sanitizer,
+                sigma=sigma,
+                batches_per_lot=FLAGS.batches_per_lot).minimize(
+                cost, global_step=global_step)
+          else: 
+            gd_op = tf.train.MomentumOptimizer(lr, momentum).minimize(cost)
+        elif optimizer == "adam":
+          if with_privacy:
+            gd_op = dp_optimizer.DPAdamOptimizer(
+                lr,
+                beta1,
+                beta2,
+                adam_epsilon,
+                [eps, delta],
+                gaussian_sanitizer,
+                sigma=sigma,
+                batches_per_lot=FLAGS.batches_per_lot).minimize(
+                cost, global_step=global_step)
+          else: 
+            gd_op = tf.train.AdamOptimizer(lr, beta1, beta2, adam_epsilon).minimize(cost)
+        else:
+          if with_privacy:
             gd_op = dp_optimizer.DPGradientDescentOptimizer(
                 lr,
                 [eps, delta],
@@ -258,7 +288,7 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
                 sigma=sigma,
                 batches_per_lot=FLAGS.batches_per_lot).minimize(
                 cost, global_step=global_step)
-        else:
+          else:
             gd_op = tf.train.GradientDescentOptimizer(lr).minimize(cost)
 
         saver = tf.train.Saver()
@@ -292,7 +322,10 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
                                       FLAGS.eps_saturate_epochs, epoch)
             for _ in xrange(FLAGS.batches_per_lot):
                 _ = sess.run(
-                    [gd_op], feed_dict={lr: curr_lr, eps: curr_eps, delta: FLAGS.delta})
+                    [gd_op], feed_dict={lr: curr_lr, beta1:FLAGS.beta1, beta2:FLAGS.beta2,
+                                        adam_epsilon: FLAGS.adam_epsilon, 
+                                        momentum: FLAGS.momentum, eps: curr_eps, 
+                                        delta: FLAGS.delta})
             sys.stderr.write("step: %d/%d\n" % (step, num_steps))
 
             # See if we should stop training due to exceeded privacy budget:
@@ -415,12 +448,15 @@ def main(_):
     logits.relu = False
     logits.with_bias = False
     network_parameters.layer_parameters.append(logits)
+    train_path = os.path.join(ROOT_DIR, FLAGS.training_data_path)
+    eval_path = os.path.join(ROOT_DIR, FLAGS.eval_data_path)
 
-    Train(FLAGS.training_data_path,
-          FLAGS.eval_data_path,
+    Train(train_path,
+          eval_path,
           network_parameters,
           FLAGS.num_training_steps,
           FLAGS.save_path,
+          FLAGS.optimizer,
           eval_steps=FLAGS.eval_steps)
 
 
