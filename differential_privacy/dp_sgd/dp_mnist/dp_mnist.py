@@ -31,97 +31,11 @@ from differential_privacy.dp_sgd.dp_optimizer import dp_pca
 from differential_privacy.dp_sgd.dp_optimizer import sanitizer
 from differential_privacy.dp_sgd.dp_optimizer import utils
 from differential_privacy.privacy_accountant.tf import accountant
+from differential_privacy.dp_sgd.utils import FLAGS
 
-# parameters for the training
-tf.flags.DEFINE_integer("batch_size", 100,
-                        "The training batch size.")
-tf.flags.DEFINE_integer("batches_per_lot", 1,
-                        "Number of batches per lot.")
-# Together, batch_size and batches_per_lot determine lot_size.
-tf.flags.DEFINE_integer("num_training_steps", 100,
-                        "The number of training steps."
-                        "This counts number of lots.")
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-tf.flags.DEFINE_bool("randomize", True,
-                     "If true, randomize the input data; otherwise use a fixed "
-                     "seed and non-randomized input.")
-tf.flags.DEFINE_bool("freeze_bottom_layers", False,
-                     "If true, only train on the logit layer.")
-tf.flags.DEFINE_bool("save_mistakes", False,
-                     "If true, save the mistakes made during testing.")
-tf.flags.DEFINE_float("lr", 0.05, "start learning rate")
-tf.flags.DEFINE_float("end_lr", 0.05, "end learning rate")
-tf.flags.DEFINE_float("lr_saturate_epochs", 0,
-                      "learning rate saturate epochs; set to 0 for a constant "
-                      "learning rate of --lr.")
 
-# For searching parameters
-tf.flags.DEFINE_integer("projection_dimensions", 60,
-                        "PCA projection dimensions, or 0 for no projection.")
-tf.flags.DEFINE_integer("num_hidden_layers", 1,
-                        "Number of hidden layers in the network")
-tf.flags.DEFINE_integer("hidden_layer_num_units", 1000,
-                        "Number of units per hidden layer")
-tf.flags.DEFINE_float("default_gradient_l2norm_bound", 4.0, "norm clipping")
-tf.flags.DEFINE_integer("num_conv_layers", 0,
-                        "Number of convolutional layers to use. (0, 1, 2)")
-
-tf.flags.DEFINE_string("training_data_path",
-                       "../../data/mnist/mnist_train.tfrecord",
-                       "Location of the training data.")
-tf.flags.DEFINE_string("eval_data_path",
-                       "../../data/mnist/mnist_train.tfrecord",
-                       "Location of the eval data.")
-tf.flags.DEFINE_integer("eval_steps", 10,
-                        "Evaluate the model every eval_steps")
-
-# Parameters for privacy spending. We allow linearly varying eps during
-# training.
-tf.flags.DEFINE_string("accountant_type", "Moments", "Moments, Amortized.")
-
-# Flags that control privacy spending during training.
-tf.flags.DEFINE_float("eps", 1.0,
-                      "Start privacy spending for one epoch of training, "
-                      "used if accountant_type is Amortized.")
-tf.flags.DEFINE_float("end_eps", 1.0,
-                      "End privacy spending for one epoch of training, "
-                      "used if accountant_type is Amortized.")
-tf.flags.DEFINE_float("eps_saturate_epochs", 0,
-                      "Stop varying epsilon after eps_saturate_epochs. Set to "
-                      "0 for constant eps of --eps. "
-                      "Used if accountant_type is Amortized.")
-tf.flags.DEFINE_float("delta", 1e-5,
-                      "Privacy spending for training. Constant through "
-                      "training, used if accountant_type is Amortized.")
-tf.flags.DEFINE_float("sigma", 4.0,
-                      "Noise sigma, used only if accountant_type is Moments")
-
-# Flags that control privacy spending for the pca projection
-# (only used if --projection_dimensions > 0).
-tf.flags.DEFINE_float("pca_eps", 0.5,
-                      "Privacy spending for PCA, used if accountant_type is "
-                      "Amortized.")
-tf.flags.DEFINE_float("pca_delta", 0.005,
-                      "Privacy spending for PCA, used if accountant_type is "
-                      "Amortized.")
-
-tf.flags.DEFINE_float("pca_sigma", 7.0,
-                      "Noise sigma for PCA, used if accountant_type is Moments")
-
-tf.flags.DEFINE_string("target_eps", "0.125,0.25,0.5,1,2,4,8",
-                       "Log the privacy loss for the target epsilon's. Only "
-                       "used when accountant_type is Moments.")
-tf.flags.DEFINE_float("target_delta", 1e-5,
-                      "Maximum delta for --terminate_based_on_privacy.")
-tf.flags.DEFINE_bool("terminate_based_on_privacy", False,
-                     "Stop training if privacy spent exceeds "
-                     "(max(--target_eps), --target_delta), even "
-                     "if --num_training_steps have not yet been completed.")
-
-tf.flags.DEFINE_string("save_path", "/tmp/mnist_dir",
-                       "Directory for saving model outputs.")
-
-FLAGS = tf.flags.FLAGS
 NUM_TRAINING_IMAGES = 60000
 NUM_TESTING_IMAGES = 10000
 IMAGE_SIZE = 28
@@ -162,7 +76,6 @@ def MnistInput(mnist_data_file, batch_size, randomize):
             allow_smaller_final_batch=True)
     else:
         images, labels = tf.train.batch([image, label], batch_size=batch_size, allow_smaller_final_batch=True)
-
     return images, labels
 
 
@@ -267,6 +180,13 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
                        "pca_sigma": FLAGS.pca_sigma,
                        })
 
+    print('='*20+'Parameters'+'='*20)
+    print(params)
+    print('=' * 50)
+
+    if not os.path.isdir(save_path):
+        os.mkdir(os.path.join(ROOT_DIR, save_path))
+
     with tf.Graph().as_default(), tf.Session() as sess, tf.device('/cpu:0'):
         # Create the basic Mnist model.
         images, labels = MnistInput(mnist_train_file, batch_size, FLAGS.randomize)
@@ -274,7 +194,7 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
         logits, projection, training_params = utils.BuildNetwork(
             images, network_parameters)
 
-        print(training_params.keys())  # ['hidden0_weight', 'logits_weight']
+        #print(training_params.keys())  # ['hidden0_weight', 'logits_weight']
 
         cost = tf.nn.softmax_cross_entropy_with_logits(
             logits=logits, labels=tf.one_hot(labels, 10))
@@ -373,7 +293,7 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
             for _ in xrange(FLAGS.batches_per_lot):
                 _ = sess.run(
                     [gd_op], feed_dict={lr: curr_lr, eps: curr_eps, delta: FLAGS.delta})
-            sys.stderr.write("step: %d\n" % step)
+            sys.stderr.write("step: %d/%d\n" % (step, num_steps))
 
             # See if we should stop training due to exceeded privacy budget:
             should_terminate = False
