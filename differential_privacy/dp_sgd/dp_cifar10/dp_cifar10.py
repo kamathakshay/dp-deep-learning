@@ -29,6 +29,7 @@ import os
 import sys
 import time
 import numpy as np
+import datetime
 from six.moves import xrange
 import tensorflow as tf
 
@@ -61,7 +62,7 @@ def Cifar10Input(eval=False):
     return images, labels
 
 
-def Eval(network_parameters, num_testing_images, load_path, save_mistakes=False):
+def Eval(network_parameters, num_testing_images, load_path, save_mistakes=False, use_eval_data=True):
     """Evaluate MNIST for a number of steps.
 
     Args:
@@ -81,7 +82,7 @@ def Eval(network_parameters, num_testing_images, load_path, save_mistakes=False)
     with tf.Graph().as_default(), tf.Session() as sess:
         # Create the basic Mnist model.
         #images, labels = MnistInput(mnist_data_file, batch_size, randomize)
-        images, labels = Cifar10Input(eval=True)
+        images, labels = Cifar10Input(eval=use_eval_data)
         logits, _, _ = utils.BuildNetwork(images, network_parameters)
         softmax = tf.nn.softmax(logits)
 
@@ -303,12 +304,14 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
                 saver.save(sess, save_path=save_path + "/ckpt")
                 train_accuracy, _ = Eval(network_parameters,
                                          num_testing_images=NUM_TESTING_IMAGES,
-                                         load_path=save_path)
+                                         load_path=save_path,
+                                         use_eval_data=False)
                 sys.stderr.write("train_accuracy: %.2f\n" % train_accuracy)
                 test_accuracy, mistakes = Eval(network_parameters,
                                                num_testing_images=NUM_TESTING_IMAGES,
                                                load_path=save_path,
-                                               save_mistakes=FLAGS.save_mistakes)
+                                               save_mistakes=FLAGS.save_mistakes,
+                                               use_eval_data=True)
                 sys.stderr.write("eval_accuracy: %.2f\n" % test_accuracy)
 
                 curr_time = time.time()
@@ -404,10 +407,24 @@ def main(_):
     logits.with_bias = False
     network_parameters.layer_parameters.append(logits)
 
+    datenow = datetime.datetime.today().strftime('%y-%m-%d-%H-%M')
+    params = {"a": FLAGS.accountant_type,
+              "b": FLAGS.batch_size,
+              "lr": FLAGS.lr
+              }
+    if FLAGS.accountant_type == "Amortized":
+        params.update({"eps": FLAGS.eps,
+                       "delta": FLAGS.delta,
+                       })
+    elif FLAGS.accountant_type == "Moments":
+        params.update({"sigma": FLAGS.sigma,
+                       })
+    model_name = '_'.join([k+str(x) for k,x in params.items()])
+    save_dir = os.path.join(FLAGS.save_path, "m_" + datenow + "_" + model_name)
 
     Train(network_parameters,
           FLAGS.num_training_steps,
-          FLAGS.save_path,
+          save_dir,
           eval_steps=FLAGS.eval_steps)
 
 
