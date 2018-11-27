@@ -318,6 +318,8 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
                 elapsed_time = curr_time - prev_time
                 prev_time = curr_time
 
+                sys.stderr.write("elapsed_time: %.2f seconds\n" % elapsed_time)
+
                 results.append({"step": step + 1,  # Number of lots trained so far.
                                 "elapsed_secs": elapsed_time,
                                 "spent_eps_deltas": spent_eps_deltas,
