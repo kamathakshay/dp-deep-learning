@@ -237,6 +237,9 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
         eps = tf.placeholder(tf.float32)
         delta = tf.placeholder(tf.float32)
         momentum = tf.placeholder(tf.float32)
+        beta1 = tf.placeholder(tf.float32)
+        beta2 = tf.placeholder(tf.float32)
+        adam_epsilon = tf.placeholder(tf.float32)
 
         init_ops = []
         if network_parameters.projection_type == "PCA":

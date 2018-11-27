@@ -94,16 +94,16 @@ tf.flags.DEFINE_string("save_path", "results/",
 tf.flags.DEFINE_string("optimizer", "SGD",
                        "Optimizer for training: momentum/adam(SGD default")
 
-tf.flags.DEFINE_string("momentum", 0.99,
+tf.flags.DEFINE_float("momentum", 0.99,
                        "momentum parameter")
 
-tf.flags.DEFINE_string("beta1", 0.9,
+tf.flags.DEFINE_float("beta1", 0.9,
                        "beta1 parameter for Adam")
 
-tf.flags.DEFINE_string("beta2", 0.999,
+tf.flags.DEFINE_float("beta2", 0.999,
                        "beta2 parameter for Adam")
 
-tf.flags.DEFINE_string("adam_epsilon", 1e-8,
+tf.flags.DEFINE_float("adam_epsilon", 1e-8,
                        "epsilon parameter in Adam")
 
 
