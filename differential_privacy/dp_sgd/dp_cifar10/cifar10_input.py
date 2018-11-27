@@ -34,7 +34,7 @@ NUM_CLASSES = 10
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
 
-DATA_DIR = '../../data/cifar10/cifar-10-batches-bin'
+DATA_DIR = '../../data/cifar10/'
 DATA_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
 
 

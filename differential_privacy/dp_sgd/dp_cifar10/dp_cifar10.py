@@ -170,7 +170,7 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
     print('=' * 50)
 
     if not os.path.isdir(save_path):
-        os.mkdir(os.path.join(ROOT_DIR, save_path))
+        tf.gfile.MakeDirs(os.path.join(ROOT_DIR, save_path))
 
     with tf.Graph().as_default(), tf.Session() as sess, tf.device('/cpu:0'):
         # Create the basic Mnist model.
@@ -429,6 +429,6 @@ def main(_):
 
 
 if __name__ == "__main__":
-    if not os.path.exists(DATA_DIR):
+    if not os.path.exists(DATA_DIR) or not os.path.exists(DATA_DIR+'/data_batch_1.bin'):
         cifar10_input.maybe_download_and_extract()
     tf.app.run()
