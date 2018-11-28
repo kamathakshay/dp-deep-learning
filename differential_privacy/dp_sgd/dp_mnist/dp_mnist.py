@@ -205,7 +205,7 @@ def Train(mnist_train_file, mnist_test_file, network_parameters, num_steps,
         cost = tf.reduce_sum(cost, [0]) / batch_size
 
         if FLAGS.accountant_type == "Amortized":
-            priv_accountant = accountant.AmortizedAccountant(NUM_TRAINING_IMAGES)
+            priv_accountant = accountant.DummyAccountant()#NUM_TRAINING_IMAGES)
             sigma = None
             pca_sigma = None
             with_privacy = FLAGS.eps > 0

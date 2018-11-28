@@ -45,7 +45,7 @@ tf.flags.DEFINE_integer("eval_steps", 10,
 
 # Parameters for privacy spending. We allow linearly varying eps during
 # training.
-tf.flags.DEFINE_string("accountant_type", "Moments", "Moments, Amortized.")
+tf.flags.DEFINE_string("accountant_type", "Amortized", "Moments, Amortized.")
 
 # Flags that control privacy spending during training.
 tf.flags.DEFINE_float("eps", 1.0,
