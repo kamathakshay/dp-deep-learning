@@ -126,15 +126,18 @@ def _generate_image_and_label_batch(image, label, min_queue_examples,
             [image, label],
             batch_size=batch_size,
             num_threads=num_preprocess_threads,
-            capacity=min_queue_examples + 3 * batch_size,
-            min_after_dequeue=min_queue_examples)
+            #capacity=min_queue_examples + 3 * batch_size,
+            #min_after_dequeue=min_queue_examples
+            capacity=(batch_size * 100),
+            min_after_dequeue=(batch_size * 10),)
         # allow_smaller_final_batch=True)
     else:
         images, label_batch = tf.train.batch(
             [image, label],
             batch_size=batch_size,
             num_threads=num_preprocess_threads,
-            capacity=min_queue_examples + 3 * batch_size)
+            capacity=(batch_size * 100),)
+            #capacity=min_queue_examples + 3 * batch_size)
         # allow_smaller_final_batch=True)
 
     # Display the training images in the visualizer.

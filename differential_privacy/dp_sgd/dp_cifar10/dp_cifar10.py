@@ -258,6 +258,7 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
         results = []
         start_time = time.time()
         prev_time = start_time
+        average_elapsed_time = -1
         filename = "results-0.json"
         log_path = os.path.join(save_path, filename)
 
@@ -277,7 +278,7 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
             for _ in xrange(FLAGS.batches_per_lot):
                 _ = sess.run(
                     [gd_op], feed_dict={lr: curr_lr, eps: curr_eps, delta: FLAGS.delta})
-            sys.stderr.write("step: %d/%d\n" % (step, num_steps))
+            #sys.stderr.write("step: %d/%d\n" % (step, num_steps))
 
             # See if we should stop training due to exceeded privacy budget:
             should_terminate = False
@@ -292,6 +293,7 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
                     should_terminate = True
 
             if (eval_steps > 0 and (step + 1) % eval_steps == 0) or should_terminate:
+                sys.stderr.write("step: %d/%d\n" % (step, num_steps))
                 if with_privacy:
                     spent_eps_deltas = priv_accountant.get_privacy_spent(
                         sess, target_eps=target_eps)
@@ -316,9 +318,17 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
 
                 curr_time = time.time()
                 elapsed_time = curr_time - prev_time
+                if average_elapsed_time == -1:
+                    average_elapsed_time = elapsed_time
+                else:
+                    average_elapsed_time = (average_elapsed_time + elapsed_time)/2
+                remain_time = float(average_elapsed_time)/(step/num_steps)*(1-step/num_steps)/3600.0
                 prev_time = curr_time
 
-                sys.stderr.write("elapsed_time: %.2f seconds\n" % elapsed_time)
+                sys.stderr.write("average_elapsed_time: %.2f seconds\n" % average_elapsed_time)
+                sys.stderr.write("time remain: ~%.2f hours\n"
+                                 % remain_time)
+
 
                 results.append({"step": step + 1,  # Number of lots trained so far.
                                 "elapsed_secs": elapsed_time,
