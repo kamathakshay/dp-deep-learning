@@ -322,7 +322,7 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
                     average_elapsed_time = elapsed_time
                 else:
                     average_elapsed_time = (average_elapsed_time + elapsed_time)/2
-                remain_time = float(average_elapsed_time)/(step/num_steps)*(1-step/num_steps)/3600.0
+                remain_time = float(average_elapsed_time)*((num_steps-step)/eval_steps)/3600.0
                 prev_time = curr_time
 
                 sys.stderr.write("average_elapsed_time: %.2f seconds\n" % average_elapsed_time)
