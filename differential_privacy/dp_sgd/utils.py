@@ -1,5 +1,7 @@
 import tensorflow as tf
 
+
+
 # parameters for the training
 tf.flags.DEFINE_integer("batch_size", 100,
                         "The training batch size.")
@@ -48,10 +50,10 @@ tf.flags.DEFINE_integer("eval_steps", 10,
 tf.flags.DEFINE_string("accountant_type", "Amortized", "Moments, Amortized.")
 
 # Flags that control privacy spending during training.
-tf.flags.DEFINE_float("eps", 1.0,
+tf.flags.DEFINE_float("eps", 0.0,
                       "Start privacy spending for one epoch of training, "
                       "used if accountant_type is Amortized.")
-tf.flags.DEFINE_float("end_eps", 1.0,
+tf.flags.DEFINE_float("end_eps", 0.0,
                       "End privacy spending for one epoch of training, "
                       "used if accountant_type is Amortized.")
 tf.flags.DEFINE_float("eps_saturate_epochs", 0,
@@ -61,7 +63,7 @@ tf.flags.DEFINE_float("eps_saturate_epochs", 0,
 tf.flags.DEFINE_float("delta", 1e-5,
                       "Privacy spending for training. Constant through "
                       "training, used if accountant_type is Amortized.")
-tf.flags.DEFINE_float("sigma", 4.0,
+tf.flags.DEFINE_float("sigma", 0.0,
                       "Noise sigma, used only if accountant_type is Moments")
 
 # Flags that control privacy spending for the pca projection
@@ -91,8 +93,8 @@ tf.flags.DEFINE_string("save_path", "results/",
 
 
 #Optimizers
-tf.flags.DEFINE_string("optimizer", "SGD",
-                       "Optimizer for training: momentum/adam(SGD default")
+tf.flags.DEFINE_string("optimizer", "adam",
+                       "Optimizer for training: momentum/adam/SGD default")
 
 tf.flags.DEFINE_float("momentum", 0.99,
                        "momentum parameter")
@@ -103,8 +105,20 @@ tf.flags.DEFINE_float("beta1", 0.9,
 tf.flags.DEFINE_float("beta2", 0.999,
                        "beta2 parameter for Adam")
 
-tf.flags.DEFINE_float("adam_epsilon", 1e-8,
+tf.flags.DEFINE_float("adam_epsilon", 0.00000001,
                        "epsilon parameter in Adam")
+
+
+
+
+#Transfer Learning
+tf.flags.DEFINE_bool("transfer_learn", False,
+                     "True if you want to transfer learn from CIFAR100"
+                     "if --num_training_steps have not yet been completed.")
+
+tf.flags.DEFINE_string("transfer_checkpoint",
+                       "../results_cifar100/",
+                       "Location of the checkpoint data.")
 
 
 

@@ -33,6 +33,8 @@ import datetime
 from six.moves import xrange
 import tensorflow as tf
 
+from tensorflow.python.tools import inspect_checkpoint as chkp
+
 sys.path.append('../../../')
 
 from differential_privacy.dp_sgd.dp_optimizer import dp_optimizer
@@ -77,6 +79,7 @@ def Eval(network_parameters, num_testing_images, load_path, save_mistakes=False,
     Returns:
       The evaluation accuracy as a float.
     """
+
     batch_size = 100
     # Like for training, we need a session for executing the TensorFlow graph.
     with tf.Graph().as_default(), tf.Session() as sess:
@@ -93,6 +96,7 @@ def Eval(network_parameters, num_testing_images, load_path, save_mistakes=False,
 
         saver = tf.train.Saver()
         saver.restore(sess, ckpt_state.model_checkpoint_path)
+
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
@@ -192,8 +196,8 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
             pca_sigma = None
             with_privacy = FLAGS.eps > 0
         elif FLAGS.accountant_type == "Moments":
-            priv_accountant = accountant.GaussianMomentsAccountant(
-                NUM_TRAINING_IMAGES)
+            priv_accountant = accountant.DummyAccountant()
+                #NUM_TRAINING_IMAGES)
             sigma = FLAGS.sigma
             pca_sigma = FLAGS.pca_sigma
             with_privacy = FLAGS.sigma > 0
@@ -218,6 +222,10 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
         lr = tf.placeholder(tf.float32)
         eps = tf.placeholder(tf.float32)
         delta = tf.placeholder(tf.float32)
+        momentum = tf.placeholder(tf.float32)
+        beta1 = tf.placeholder(tf.float32)
+        beta2 = tf.placeholder(tf.float32)
+        adam_epsilon = tf.placeholder(tf.float32)
 
         init_ops = []
         if network_parameters.projection_type == "PCA":
@@ -234,7 +242,32 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
         global_step = tf.Variable(0, dtype=tf.int32, trainable=False,
                                   name="global_step")
 
-        if with_privacy:
+        #SETUP OPTIMIZERS
+        if FLAGS.optimizer == "momentum":
+          if with_privacy:
+            gd_op = dp_optimizer.DPMomentumOptimizer(
+                lr,
+                momentum,
+                [eps, delta],
+                gaussian_sanitizer,
+                sigma=sigma,
+                batches_per_lot=FLAGS.batches_per_lot).minimize(
+                cost, global_step=global_step)
+          else: 
+            gd_op = tf.train.MomentumOptimizer(lr, momentum).minimize(cost)
+        elif FLAGS.optimizer == "adam":
+          if with_privacy:
+            gd_op = dp_optimizer.DPAdamOptimizer(
+                learning_rate= lr,
+                eps_delta= [eps, delta],
+                sanitizer= gaussian_sanitizer,
+                sigma=sigma,
+                batches_per_lot=FLAGS.batches_per_lot).minimize(
+                cost, global_step=global_step)
+          else: 
+            gd_op = tf.train.AdamOptimizer(learning_rate = lr).minimize(cost)
+        else:
+          if with_privacy:
             gd_op = dp_optimizer.DPGradientDescentOptimizer(
                 lr,
                 [eps, delta],
@@ -242,9 +275,30 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
                 sigma=sigma,
                 batches_per_lot=FLAGS.batches_per_lot).minimize(
                 cost, global_step=global_step)
-        else:
-            gd_op = tf.train.GradientDescentOptimizer(lr).minimize(cost)
+          else:
+            gd_op = tf.train.GradientDescentOptimizer(lr).minimize(cost)    
 
+
+        #SETUP TRANSFER LEARNING
+
+        reuse_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+                               scope="conv") 
+        reuse_vars_dict = dict([(var.op.name, var) for var in reuse_vars])
+        print reuse_vars_dict
+
+        # if (FLAGS.transfer_learn):
+        #   ckpt_state = tf.train.get_checkpoint_state(FLAGS.transfer_checkpoint)
+        #   if not (ckpt_state and ckpt_state.model_checkpoint_path):
+        #     raise ValueError("No model checkpoint to eval at %s\n" % FLAGS.transfer_checkpoint)
+        #   restore_saver = tf.train.Saver(reuse_vars_dict)
+        #   restore_saver.restore(sess, ckpt_state.model_checkpoint_path)
+
+        #conv1_vars = [var for var in tf.global_variables()
+        #      if var.op.name.startswith("conv2_conv_bias")]  
+
+        #conv1_var_values_after_init = sess.run(conv1_vars)
+        
+        
         saver = tf.train.Saver()
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
@@ -254,6 +308,17 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
             sess.run(tf.variables_initializer([v]))
         sess.run(tf.global_variables_initializer())
         sess.run(init_ops)
+
+        if (FLAGS.transfer_learn):
+          ckpt_state = tf.train.get_checkpoint_state(FLAGS.transfer_checkpoint)
+          if not (ckpt_state and ckpt_state.model_checkpoint_path):
+            raise ValueError("No model checkpoint to eval at %s\n" % FLAGS.transfer_checkpoint)
+          restore_saver = tf.train.Saver(reuse_vars_dict)
+          restore_saver.restore(sess, ckpt_state.model_checkpoint_path)
+
+        #conv1_var_values_after_two = sess.run(conv1_vars)
+        #print conv1_var_values_after_two
+
 
         results = []
         start_time = time.time()
@@ -277,7 +342,10 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
                                       FLAGS.eps_saturate_epochs, epoch)
             for _ in xrange(FLAGS.batches_per_lot):
                 _ = sess.run(
-                    [gd_op], feed_dict={lr: curr_lr, eps: curr_eps, delta: FLAGS.delta})
+                    [gd_op], feed_dict={lr: curr_lr, beta1:FLAGS.beta1, beta2:FLAGS.beta2,
+                                        adam_epsilon: FLAGS.adam_epsilon, 
+                                        momentum: FLAGS.momentum, eps: curr_eps, 
+                                        delta: FLAGS.delta})
             #sys.stderr.write("step: %d/%d\n" % (step, num_steps))
 
             # See if we should stop training due to exceeded privacy budget:
@@ -321,7 +389,7 @@ def Train(network_parameters, num_steps, save_path, eval_steps=0):
                 if average_elapsed_time == -1:
                     average_elapsed_time = elapsed_time
                 else:
-                    average_elapsed_time = (average_elapsed_time + elapsed_time)/2
+                    average_elapsed_time = (average_elapsed_time*step + elapsed_time)/(step+1)
                 remain_time = float(average_elapsed_time)*((num_steps-step)/eval_steps)/3600.0
                 prev_time = curr_time
 
@@ -364,7 +432,7 @@ def main(_):
     network_parameters.default_gradient_l2norm_bound = (
         FLAGS.default_gradient_l2norm_bound)
     if FLAGS.num_conv_layers == 0:
-        raise ValueError("Please set nun_conv_layers=2 for cifar10")
+        raise ValueError("Please set num_conv_layers=2 for cifar10")
     if FLAGS.projection_dimensions > 0 and FLAGS.num_conv_layers > 0:
         raise ValueError("Currently you can't do PCA and have convolutions"
                          "at the same time. Pick one")
@@ -422,8 +490,11 @@ def main(_):
     datenow = datetime.datetime.today().strftime('%y-%m-%d-%H-%M')
     params = {"a": FLAGS.accountant_type,
               "b": FLAGS.batch_size,
-              "lr": FLAGS.lr
+              "lr": FLAGS.lr,
+              "opt": FLAGS.optimizer,
               }
+    if FLAGS.optimizer == 'momentum':
+      params.update({"mom":FLAGS.momentum})
     if FLAGS.accountant_type == "Amortized":
         params.update({"eps": FLAGS.eps,
                        "delta": FLAGS.delta,

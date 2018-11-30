@@ -476,7 +476,7 @@ class DPAdamOptimizer(tf.train.AdamOptimizer):
   """Differentially private Momentum optimizer.
   """
 
-  def __init__(self, learning_rate, beta1, beta2, epsilon, eps_delta, sanitizer,
+  def __init__(self, learning_rate, eps_delta, sanitizer, beta1=0.9, beta2=0.99, epsilon=1e-8,
                sigma=None, use_locking=False, name="DPAdam",
                batches_per_lot=1):
     """Construct a differentially private Momentum optimizer.

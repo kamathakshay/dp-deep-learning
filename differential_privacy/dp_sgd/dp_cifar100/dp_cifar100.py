@@ -382,6 +382,7 @@ def main(_):
         conv.out_channels = 64
         conv.num_outputs = 64 * 12 * 12
         conv.in_size = 24
+        conv.trainable = True 
         network_parameters.conv_parameters.append(conv)
         # defaults for the rest: 5x5,stride 1, relu, maxpool 2x2,stride 2.
         # insize 28x28, bias, stddev 0.1, non-trainable.
@@ -392,6 +393,7 @@ def main(_):
         conv.out_channels = 64
         conv.num_outputs = 64 * 6 * 6
         conv.in_size = 12
+        conv.trainable = True 
         # defaults for the rest: 5x5,stride 1, relu, maxpool 2x2,stride 2.
         # bias, stddev 0.1, non-trainable.
         network_parameters.conv_parameters.append(conv)

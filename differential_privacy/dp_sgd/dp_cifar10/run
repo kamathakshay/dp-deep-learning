@@ -41,11 +41,15 @@ date
 # Launch serial code...
 
 python dp_cifar10.py --save_path ../results_cifar \
-                     --num_training_steps 150000  \
+                     --num_training_steps 1500  \
                      --projection_dimensions 0  \
                      --num_conv_layers 2  \
                      --accountant_type Moments \
                      --sigma 0 \
-                     --eval_steps 100
+                     --eval_steps 100 \
+                     --transfer_learn True \
+                     --transfer_checkpoint ../results_cifar_100/m_18-11-29-15-44_aAmortized_b100_lr0.05_eps0.0_delta1e-05/ \
+                     --optimizer momentum \
+                     
 
 # ---------------------------------------------------
