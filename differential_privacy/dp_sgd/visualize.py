@@ -31,6 +31,8 @@ if not os.path.isdir(plot_dir):
 
 print('Load model: '+model_dir)
 
+model_name = model_dir.split('/')[-1][17:]
+
 def plot_training(history_dir, plot_dir):
     with open(history_dir) as f:
         history = json.load(f)
@@ -46,7 +48,7 @@ def plot_training(history_dir, plot_dir):
 
     plt.plot(steps, train_acc, 'b-', label='Training')
     plt.plot(steps, test_acc, 'r-', label='Validation')
-    plt.title('Accuracy title...')
+    plt.title('Accuracy for '+model_name)
     plt.xlabel('step')
     plt.xlabel('accuracy')
     plt.legend()
