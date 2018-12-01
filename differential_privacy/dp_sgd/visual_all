@@ -1,0 +1,5 @@
+#!/bin/bash
+for model in results_cifar/m_*
+do
+  python visualize.py --save_dir './' --model_name $model
+done
