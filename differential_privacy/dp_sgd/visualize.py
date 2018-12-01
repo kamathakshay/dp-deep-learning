@@ -46,9 +46,9 @@ def plot_training(history_dir, plot_dir):
 
     plt.plot(steps, train_acc, 'b-', label='Training')
     plt.plot(steps, test_acc, 'r-', label='Validation')
-    plt.title('Accuracy title...')
-    plt.xlabel('step')
-    plt.xlabel('accuracy')
+    plt.title('Accuracy vs Epochs')
+    plt.xlabel('steps')
+    plt.ylabel('accuracy')
     plt.legend()
 
     plt.savefig(os.path.join(plot_dir, 'acc.png'))

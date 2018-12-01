@@ -493,8 +493,6 @@ def main(_):
               "lr": FLAGS.lr,
               "opt": FLAGS.optimizer,
               }
-    if FLAGS.optimizer == 'momentum':
-      params.update({"mom":FLAGS.momentum})
     if FLAGS.accountant_type == "Amortized":
         params.update({"eps": FLAGS.eps,
                        "delta": FLAGS.delta,

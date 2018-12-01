@@ -22,13 +22,13 @@
 
 #----------------------------------------------------
 
-#SBATCH -J train           # Job name
+#SBATCH -J train-SGD	          # Job name
 #SBATCH -o train.o%j       # Name of stdout output file
 #SBATCH -e train.e%j       # Name of stderr error file
 #SBATCH -p gpu          # Queue (partition) name
 #SBATCH -N 1               # Total # of nodes (must be 1 for serial)
 #SBATCH -n 1               # Total # of mpi tasks (should be 1 for serial)
-#SBATCH -t 05:30:00        # Run time (hh:mm:ss)
+#SBATCH -t 24:00:00        # Run time (hh:mm:ss)
 
 
 # Other commands must follow all #SBATCH directives...
@@ -40,16 +40,18 @@ date
 
 # Launch serial code...
 
-python dp_cifar10.py --save_path ../results_cifar \
-                     --num_training_steps 1500  \
+python dp_cifar10.py --save_path ../results_cifar/SGD/ \
+                     --num_training_steps 70000  \
                      --projection_dimensions 0  \
                      --num_conv_layers 2  \
-                     --accountant_type Moments \
-                     --sigma 0 \
-                     --eval_steps 100 \
+                     --accountant_type Amortized \
+                     --eps 32.0 \
+                     --delta 1e-6 \
+                     --eval_steps 500 \
                      --transfer_learn True \
-                     --transfer_checkpoint ../results_cifar_100/m_18-11-29-15-44_aAmortized_b100_lr0.05_eps0.0_delta1e-05/ \
-                     --optimizer momentum \
-                     
+                     --transfer_checkpoint ../results_cifar100/m_18-11-29-15-44_aAmortized_b100_lr0.05_eps0.0_delta1e-05/\
+                     --optimizer SGD \
+
+
 
 # ---------------------------------------------------
